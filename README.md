@@ -96,8 +96,7 @@ App.PostController = Ember.ObjectController.extend(Ember.Validations.Mixin, {
   // property could be used to switch the wrapped content of the validatable
   // attribute.
   //
-  latestComment: Em.computed.validatable('model.comments.firstObject',
-    function() {
+  latestComment: Em.computed.validatable('model.comments.firstObject', {
     validations: {
       ...
     } 
