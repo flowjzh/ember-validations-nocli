@@ -25,7 +25,7 @@ GIT
       thor
 
 GEM
-  remote: https://rubygems.org/
+  remote: https://ruby.taobao.org/
   specs:
     aws-sdk (1.32.0)
       json (~> 1.4)
