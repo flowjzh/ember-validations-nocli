@@ -15,7 +15,6 @@ assets/bpm_libs.js
 assets/bpm_styles.css
 bin/
 coverage
-dist
 docs/build
 docs/node_modules
 lib/*/tests/all.js
@@ -36,3 +35,8 @@ tmp.spade
 tests/source
 node_modules
 .vagrant
+dist/ember-validations-spade.js
+dist/ember-validations-tests.js
+dist/ember-validations-tests.js
+dist/modules
+
