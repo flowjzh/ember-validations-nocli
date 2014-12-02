@@ -105,4 +105,23 @@ App.PostController = Ember.ObjectController.extend(Ember.Validations.Mixin, {
 });
 ```
 
+## Inline Validators ##
+
+[Inline Validators](https://github.com/dockyard/ember-validations#inline-validators)
+is back-ported as `Ember.Validations.validator`:
+
+```js
+User.create({
+  validations: {
+    name: {
+      inline: Ember.Validations.validator(function() {
+        if (this.model.get('canNotDoSomething')) {
+          return "you can't do this!"
+        }
+      }) 
+    }
+  }
+});
+```
+
 [Licensed under the MIT license](http://www.opensource.org/licenses/mit-license.php)

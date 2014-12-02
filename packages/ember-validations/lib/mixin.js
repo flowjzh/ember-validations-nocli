@@ -32,6 +32,10 @@ var ArrayValidatorProxy = Ember.ArrayProxy.extend(setValidityMixin, {
   validators: Ember.computed.alias('content')
 });
 
+Ember.Validations.validator = function(callback) {
+  return { callback: callback };
+};
+
 Ember.Validations.Mixin = Ember.Mixin.create(setValidityMixin, {
   init: function() {
     this._super();
@@ -58,6 +62,9 @@ Ember.Validations.Mixin = Ember.Mixin.create(setValidityMixin, {
     var property, validator;
 
     for (property in this.validations) {
+      if (this.validations[property].callback)
+        this.validations[property] = { inline: this.validations[property] };
+
       if (this.validations[property].constructor === Object) {
         this.buildRuleValidator(property);
       } else {
@@ -66,10 +73,36 @@ Ember.Validations.Mixin = Ember.Mixin.create(setValidityMixin, {
     }
   },
   buildRuleValidator: function(property) {
-    var validator;
-    for (validator in this.validations[property]) {
-      if (this.validations[property].hasOwnProperty(validator)) {
-        this.validators.pushObject(findValidator(validator).create({model: this, property: property, options: this.validations[property][validator]}));
+    var pushValidator = function(validator) {
+      if (validator) {
+        this.validators.pushObject(validator.create({
+          model: this,
+          property: property,
+          options: this.validations[property][validatorName]
+        }));
+      }
+    };
+
+    var createInlineClass = function(callback) {
+      return Ember.Validations.validators.Base.extend({
+        call: function() {
+          var errorMessage = this.callback();
+
+          if (errorMessage) {
+            this.errors.pushObject(errorMessage);
+          }
+        },
+        callback: callback
+      });
+    };
+
+    for (var validatorName in this.validations[property]) {
+      if (validatorName === 'inline') {
+	pushValidator.call(this, createInlineClass(
+          this.validations[property][validatorName].callback));
+      }
+      else if (this.validations[property].hasOwnProperty(validatorName)) {
+	pushValidator.call(this, findValidator(validatorName));
       }
     }
   },
