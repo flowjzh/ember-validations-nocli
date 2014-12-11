@@ -105,6 +105,34 @@ App.PostController = Ember.ObjectController.extend(Ember.Validations.Mixin, {
 });
 ```
 
+The first parameter could also be ignored. In that case, the computed property
+maintains its own value and could be accessed with `<key>.content`.
+
+```
+App.FooController = Ember.Controller.extend({
+  post: Ember.computed.validatable({
+    validations: {
+      ...
+    }
+  });
+
+  // Error could be fetched
+  titleError: Ember.computed.readOnly('post.errors.title.firstObject');
+  
+  // The real model of the post
+  postModel: Ember.computed.alias('post.content');
+});
+
+var store = ... // find DS store
+var ctl = App.FooController.create();
+
+// attribute value could be set in
+ctl.set('post', store.createRecord('post'));
+```
+
+Mixins could also be passed in with the hash object, as same as
+`Ember.Object.extend` takes.
+
 ## Inline Validators ##
 
 [Inline Validators](https://github.com/dockyard/ember-validations#inline-validators)
