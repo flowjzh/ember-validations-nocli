@@ -1,7 +1,8 @@
 Ember.Validations.validators.Base = Ember.Object.extend({
   init: function() {
     this.set('errors', Ember.makeArray());
-    this._dependentValidationKeys = Ember.makeArray();
+    this._dependentValidationKeys =
+      Ember.makeArray(this._dependentValidationKeys);
     this.conditionals = {
       'if': this.get('options.if'),
       unless: this.get('options.unless')
@@ -54,6 +55,8 @@ Ember.Validations.validators.Base = Ember.Object.extend({
     }
   }.on('init'),
   canValidate: function() {
+    if (this.model.get('inhibitValidation') ||
+      this.model.get('validationInhibitors.' + this.property)) return false;
     if (typeof(this.conditionals) === 'object') {
       if (this.conditionals['if']) {
         if (typeof(this.conditionals['if']) === 'function') {
