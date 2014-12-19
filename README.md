@@ -108,7 +108,7 @@ App.PostController = Ember.ObjectController.extend(Ember.Validations.Mixin, {
 The first parameter could also be ignored. In that case, the computed property
 maintains its own value and could be accessed with `<key>.content`.
 
-```
+```js
 App.FooController = Ember.Controller.extend({
   post: Ember.computed.validatable({
     validations: {
@@ -151,5 +151,93 @@ User.create({
   }
 });
 ```
+
+An enhancement has been made so that the inline validator can take dependent
+keys:
+
+```js
+validations: {
+  startDate: {
+    presence: { message: 'Start date is not set.' }
+  },
+  endDate: {
+    presence: { message: 'End date is not set.' },
+    inline: Em.Validations.validator('startDate', function() {
+      // startDate is referenced so it's need to be in the dependent key
+      if (this.get(this.property) < this.get('startDate'))
+        return 'End date is earlier than start date.';
+    })
+  }
+}
+```
+
+## Validation Inhibitors ##
+
+Sometimes the validation is not required on the full data model, especially 
+for a large model with belongsTo keys:
+
+```js
+// Validation rules of a post
+validations: {
+  title: { ... },
+  content: { ... },
+  author: true
+}
+```
+
+In the above example, the `author` is a `belongsTo` relationship and itself
+is a validatable object. We may have a requirement to edit and/or save the
+post seperately, and validation errors won't affect each other.
+
+In the original Ember Validation way, `if` and `unless` conditional
+validators are aimed for this purpose but it doesn't work with validatable
+objects like the `author`.
+
+So the `validationInhibitors` is introduced:
+
+```js
+validations: ...,
+validationInhibitors: function() {
+  var inhibited = this.get('editTitleOnly');
+  return {
+    content: inhibited,
+    author: inhibited 
+  };
+}.property('editTitleOnly').readOnly(); 
+```
+In this way, if the use case is only to edit `title`, neither `content` or
+`author` would be validated and their `isValid` property evaluates to true.
+
+The `validationInhibitors` could be used in a more fancy way. Say we have a
+large `Person` model with 2 groups of properties: personal info, career
+intention, which is required to be modified separately:
+
+```js
+var validationKeys = {
+  personalInfo: ['name', 'currentEmail', 'currentMobile', 'startWorkYear',
+   'birthDate', ...],
+  careerIntention: ['expectedSalary', 'employmentStatus', ...]
+}
+
+App.Person = Em.Ojbect.extend(Ember.Validations.Mixin, {
+  validations: ...,
+  validationInhibitors: function() {
+    var res = {};
+    Ember.keys(validationKeys).forEach(function(key) {
+      var inhibited = !this.get('editing.' + key);
+      validationKeys[key].forEach(function(p) {
+        res[p] = inhibited;
+      });
+    }, this);
+    // Double check to ensure we have all the keys covered
+    Ember.assert('Should have all keys in validations included as inhibitors',
+      Ember.keys(res).length === Ember.keys(this.get('validations')).length);
+    return res;
+  }.properties('editing').readOnly()
+});
+```
+
+In this way, validations are taken separately as what's pre-defined in
+`validationKeys`.
 
 [Licensed under the MIT license](http://www.opensource.org/licenses/mit-license.php)
