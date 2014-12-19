@@ -75,19 +75,23 @@ Ember.Validations.Errors = Ember.Object.extend({
 (function() {
 var setValidityMixin = Ember.Mixin.create({
   isValid: function() {
-    return this.get('validators').compact().filterBy('isValid', false).get('length') === 0;
-  }.property('validators.@each.isValid'),
+    if (this.get('inhibitValidation')) return true;
+    return !this.get('validators').compact().findBy('isValid', false);
+  }.property('validators.@each.isValid', 'inhibitValidation').readOnly(),
   isInvalid: Ember.computed.not('isValid')
 });
 
 var pushValidatableObject = function(model, property) {
   var content = model.get(property);
+  if (Ember.isNone(content)) return;
 
-  model.removeObserver(property, pushValidatableObject);
+  model.removeObserver(property, model, pushValidatableObject);
   if (Ember.isArray(content)) {
     model.validators.pushObject(ArrayValidatorProxy.create({model: model, property: property, contentBinding: 'model.' + property}));
   } else {
     model.validators.pushObject(content);
+    Ember.bind(model, 'validators.' + (model.validators.length - 1) + 
+      '.inhibitValidation', 'validationInhibitors.' + property);
   }
 };
 
@@ -108,10 +112,15 @@ var ArrayValidatorProxy = Ember.ArrayProxy.extend(setValidityMixin, {
 });
 
 Ember.Validations.validator = function(callback) {
-  return { callback: callback };
+  var l = arguments.length,
+      deps = new Array(l - 1);
+  for (var i = 0; i < l - 1; i++)
+    deps[i] = arguments[i];
+  return { callback: arguments[l - 1], dependentKeys: deps };
 };
 
 Ember.Validations.Mixin = Ember.Mixin.create(setValidityMixin, {
+  inhibitValidation: false,
   init: function() {
     this._super();
     this.errors = Ember.Validations.Errors.create();
@@ -132,6 +141,7 @@ Ember.Validations.Mixin = Ember.Mixin.create(setValidityMixin, {
         this.set('errors.' + sender.property, errors);
       });
     }, this);
+    this.addObserver('inhibitValidation', this, this._validate);
   },
   buildValidators: function() {
     var property, validator;
@@ -158,8 +168,9 @@ Ember.Validations.Mixin = Ember.Mixin.create(setValidityMixin, {
       }
     };
 
-    var createInlineClass = function(callback) {
+    var createInlineClass = function(inline) {
       return Ember.Validations.validators.Base.extend({
+	_dependentValidationKeys: inline.dependentKeys,
         call: function() {
           var errorMessage = this.callback();
 
@@ -167,17 +178,17 @@ Ember.Validations.Mixin = Ember.Mixin.create(setValidityMixin, {
             this.errors.pushObject(errorMessage);
           }
         },
-        callback: callback
+        callback: inline.callback
       });
     };
 
     for (var validatorName in this.validations[property]) {
       if (validatorName === 'inline') {
-	pushValidator.call(this, createInlineClass(
-          this.validations[property][validatorName].callback));
+        pushValidator.call(this,
+          createInlineClass(this.validations[property][validatorName]));
       }
       else if (this.validations[property].hasOwnProperty(validatorName)) {
-	pushValidator.call(this, findValidator(validatorName));
+        pushValidator.call(this, findValidator(validatorName));
       }
     }
   },
@@ -231,7 +242,8 @@ Ember.Validations.validators.remote = Ember.Namespace.create();
 Ember.Validations.validators.Base = Ember.Object.extend({
   init: function() {
     this.set('errors', Ember.makeArray());
-    this._dependentValidationKeys = Ember.makeArray();
+    this._dependentValidationKeys =
+      Ember.makeArray(this._dependentValidationKeys);
     this.conditionals = {
       'if': this.get('options.if'),
       unless: this.get('options.unless')
@@ -284,6 +296,8 @@ Ember.Validations.validators.Base = Ember.Object.extend({
     }
   }.on('init'),
   canValidate: function() {
+    if (this.model.get('inhibitValidation') ||
+      this.model.get('validationInhibitors.' + this.property)) return false;
     if (typeof(this.conditionals) === 'object') {
       if (this.conditionals['if']) {
         if (typeof(this.conditionals['if']) === 'function') {
