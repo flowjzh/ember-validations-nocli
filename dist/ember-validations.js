@@ -76,7 +76,7 @@ Ember.Validations.Errors = Ember.Object.extend({
 var setValidityMixin = Ember.Mixin.create({
   isValid: function() {
     if (this.get('inhibitValidation')) return true;
-    return !this.get('validators').compact().findBy('isValid', false);
+    return this.get('validators').compact().isEvery('isValid');
   }.property('validators.@each.isValid', 'inhibitValidation').readOnly(),
   isInvalid: Ember.computed.not('isValid')
 });
