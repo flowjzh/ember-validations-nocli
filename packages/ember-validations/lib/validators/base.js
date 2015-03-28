@@ -45,6 +45,8 @@ Ember.Validations.validators.Base = Ember.Object.extend({
   },
   _validate: function() {
     this.errors.clear();
+    // Wired that have to notify the change, but it works.
+    this.errors.notifyPropertyChange('[]');
     if (this.canValidate()) {
       this.call();
     }
