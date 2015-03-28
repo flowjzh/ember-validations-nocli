@@ -7,14 +7,25 @@ Ember.computed.validatable = function() {
   for (var i = 1; i < args.length; i++)
     args[i] = arguments[key ? i : i - 1];
 
-  var proxy = Em.ObjectProxy.extend.apply(Em.ObjectProxy, args).create();
+  var Proxy = Em.ObjectProxy.extend.apply(Em.ObjectProxy, args);
+
+  function getProxy(key) {
+    var proxy = this.get(key + 'Proxy');
+    if (!proxy) {
+      proxy = Proxy.create();
+      this.set(key + 'Proxy', proxy);
+    }
+    return proxy;
+  }
 
   if (!key)
-    return function(dummy, value) {
+    return function(k, value) {
+      var proxy = getProxy.call(this, k);
       return arguments.length > 1 ? proxy.set('content', value) : proxy;
     }.property();
   else
-    return function(dummy, value) {
+    return function(k, value) {
+      var proxy = getProxy.call(this, k);
       if (arguments.length > 1) {
         Em.set(this, key, value);
         return proxy.set('content', value);
