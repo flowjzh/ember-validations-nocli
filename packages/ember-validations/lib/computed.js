@@ -13,7 +13,7 @@ Ember.computed.validatable = function() {
     var proxy = this.get(key + 'Proxy');
     if (!proxy) {
       proxy = Proxy.create();
-      this.set(key + 'Proxy', proxy);
+      this[key + 'Proxy'] = proxy;
     }
     return proxy;
   }
