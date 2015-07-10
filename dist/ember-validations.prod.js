@@ -562,10 +562,10 @@ Ember.Validations.validators.local.Length = Ember.Validations.validators.Base.ex
     }
   },
   messageKeys: function() {
-    return Ember.keys(this.MESSAGES);
+    return Object.keys(this.MESSAGES);
   },
   checkKeys: function() {
-    return Ember.keys(this.CHECKS);
+    return Object.keys(this.CHECKS);
   },
   renderMessageFor: function(key) {
     var options = {count: this.getValue(key)}, _key;
@@ -633,7 +633,7 @@ Ember.Validations.validators.local.Numericality = Ember.Validations.validators.B
       this.options.messages.onlyInteger = Ember.Validations.messages.render('notAnInteger', this.options);
     }
 
-    keys = Ember.keys(this.CHECKS).concat(['odd', 'even']);
+    keys = Object.keys(this.CHECKS).concat(['odd', 'even']);
     for(index = 0; index < keys.length; index++) {
       key = keys[index];
 
@@ -643,7 +643,7 @@ Ember.Validations.validators.local.Numericality = Ember.Validations.validators.B
       }
 
       if (prop !== undefined && this.options.messages[key] === undefined) {
-        if (Ember.$.inArray(key, Ember.keys(this.CHECKS)) !== -1) {
+        if (Ember.$.inArray(key, Object.keys(this.CHECKS)) !== -1) {
           this.options.count = prop;
         }
         this.options.messages[key] = Ember.Validations.messages.render(key, this.options);
@@ -844,21 +844,28 @@ Ember.computed.validatable = function() {
   }
 
   if (!key)
-    return function(k, value) {
-      var proxy = getProxy.call(this, k);
-      return arguments.length > 1 ? proxy.set('content', value) : proxy;
-    }.property();
+    return Em.computed({
+      get: function(k) {
+        return getProxy.call(this, k);
+      },
+      set: function(k, value) {
+	return getProxy.call(this, k).set('content', value);
+      }
+    });
   else
-    return function(k, value) {
-      var proxy = getProxy.call(this, k);
-      if (arguments.length > 1) {
+    return Em.computed(key, {
+      get: function(k) {
+        var proxy = getProxy.call(this, k);
+        var val = Em.get(this, key);
+        proxy.set('content', val);
+        return val ? proxy : val;
+      },
+      set: function(k, value) {
+        var proxy = getProxy.call(this, k);
         Em.set(this, key, value);
         return proxy.set('content', value);
       }
-      var val = Em.get(this, key);
-      proxy.set('content', val);
-      return val ? proxy : val;
-    }.property(key);
+    });
 };
 
 })();

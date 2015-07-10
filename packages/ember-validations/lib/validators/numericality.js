@@ -21,7 +21,7 @@ Ember.Validations.validators.local.Numericality = Ember.Validations.validators.B
       this.options.messages.onlyInteger = Ember.Validations.messages.render('notAnInteger', this.options);
     }
 
-    keys = Ember.keys(this.CHECKS).concat(['odd', 'even']);
+    keys = Object.keys(this.CHECKS).concat(['odd', 'even']);
     for(index = 0; index < keys.length; index++) {
       key = keys[index];
 
@@ -31,7 +31,7 @@ Ember.Validations.validators.local.Numericality = Ember.Validations.validators.B
       }
 
       if (prop !== undefined && this.options.messages[key] === undefined) {
-        if (Ember.$.inArray(key, Ember.keys(this.CHECKS)) !== -1) {
+        if (Ember.$.inArray(key, Object.keys(this.CHECKS)) !== -1) {
           this.options.count = prop;
         }
         this.options.messages[key] = Ember.Validations.messages.render(key, this.options);

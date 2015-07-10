@@ -19,19 +19,26 @@ Ember.computed.validatable = function() {
   }
 
   if (!key)
-    return function(k, value) {
-      var proxy = getProxy.call(this, k);
-      return arguments.length > 1 ? proxy.set('content', value) : proxy;
-    }.property();
+    return Em.computed({
+      get: function(k) {
+        return getProxy.call(this, k);
+      },
+      set: function(k, value) {
+	return getProxy.call(this, k).set('content', value);
+      }
+    });
   else
-    return function(k, value) {
-      var proxy = getProxy.call(this, k);
-      if (arguments.length > 1) {
+    return Em.computed(key, {
+      get: function(k) {
+        var proxy = getProxy.call(this, k);
+        var val = Em.get(this, key);
+        proxy.set('content', val);
+        return val ? proxy : val;
+      },
+      set: function(k, value) {
+        var proxy = getProxy.call(this, k);
         Em.set(this, key, value);
         return proxy.set('content', value);
       }
-      var val = Em.get(this, key);
-      proxy.set('content', val);
-      return val ? proxy : val;
-    }.property(key);
+    });
 };
