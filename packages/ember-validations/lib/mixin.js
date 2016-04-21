@@ -126,9 +126,10 @@ Ember.Validations.Mixin = Ember.Mixin.create(setValidityMixin, {
   },
   validate: function() {
     var self = this;
-    return this._validate().then(function(vals) {
+    // TODO: The rejected error doesn't contain errors in child objects
+    return this._validate().then(function(valid) {
       var errors = self.get('errors');
-      if (vals.contains(false)) {
+      if (!valid) {
         return Ember.RSVP.reject(errors);
       }
       return errors;
@@ -136,6 +137,8 @@ Ember.Validations.Mixin = Ember.Mixin.create(setValidityMixin, {
   },
   _validate: function() {
     var promises = this.validators.invoke('_validate').without(undefined);
-    return Ember.RSVP.all(promises);
+    return Ember.RSVP.all(promises).then(function(vals) {
+      return !vals.contains(false)
+    });
   }.on('init')
 });
